@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { margin: 0; background: #050505; overflow: hidden; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; }
+        canvas { position: absolute; top: 0; left: 0; }
+        
+        .ui-layer { 
+            z-index: 10; 
+            text-align: center; 
+            color: white; 
+            font-family: 'serif'; 
+            pointer-events: none;
+            transition: transform 0.5s ease-out; /* Biar gerakan teks halus */
+        }
+
+        #btn-sensor { 
+            z-index: 20; padding: 10px 20px; background: #ff2d75; color: white; 
+            border: none; border-radius: 5px; cursor: pointer; pointer-events: auto;
+            box-shadow: 0 0 15px #ff2d75; margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="canvas"></canvas>
+    
+    <button id="btn-sensor">Aktifkan Efek 3D</button>
+
+    <div class="ui-layer" id="teks-parallax">
+        <h1 style="text-shadow: 0 0 20px #ff2d75; font-size: 2.5rem; margin-bottom: 0;">Teruntuk Kamu</h1>
+        <p style="font-size: 1.1rem; color: #ff2d75; letter-spacing: 2px;">— Selamanya Di Sini —</p>
+        <p style="font-size: 0.8rem; color: #555; margin-top: 20px;">(Coba goyangkan HP-mu)</p>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const btn = document.getElementById('btn-sensor');
+        const teks = document.getElementById('teks-parallax');
+        
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        let particles = [];
+        let gyroX = 0;
+        let gyroY = 0;
+
+        function aktifkanSensor() {
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                DeviceOrientationEvent.requestPermission().then(response => {
+                    if (response == 'granted') { mulaiSensor(); }
+                });
+            } else { mulaiSensor(); }
+            btn.style.display = 'none';
+        }
+
+        function mulaiSensor() {
+            window.addEventListener('deviceorientation', (event) => {
+                gyroX = event.gamma / 15;
+                gyroY = (event.beta - 45) / 15;
+
+                let moveX = gyroX * -10; 
+                let moveY = gyroY * -10;
+                teks.style.transform = `translate(${moveX}px, ${moveY}px)`;
+            });
+        }
+
+        btn.onclick = aktifkanSensor;
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 5 + 2;
+                this.speedY = Math.random() * 1 + 1;
+                this.opacity = Math.random() * 0.8 + 0.2;
+            }
+            draw() {
+                ctx.fillStyle = `rgba(255, 45, 117, ${this.opacity})`;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            update() {
+                this.y += this.speedY + gyroY;
+                this.x += gyroX;
+                if (this.y > canvas.height) { this.y = -10; this.x = Math.random() * canvas.width; }
+                if (this.y < -20) { this.y = canvas.height; }
+                if (this.x > canvas.width) this.x = 0;
+                if (this.x < 0) this.x = canvas.width;
+            }
+        }
+
+        function init() {
+            particles = [];
+            for (let i = 0; i < 100; i++) { particles.push(new Particle()); }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(animate);
+        }
+
+        init();
+        animate();
+    </script>
+</body>
+</html>
