@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Absen Grup Game</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; padding: 20px; }
+        .container { background: white; width: 100%; max-width: 600px; padding: 25px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h2 { text-align: center; color: #2c3e50; margin-bottom: 20px; }
+        
+        /* Navigasi Mode */
+        .mode-switch { display: flex; justify-content: center; margin-bottom: 20px; gap: 10px; }
+        .btn-mode { padding: 10px 20px; border: none; cursor: pointer; border-radius: 5px; font-weight: bold; transition: 0.3s; }
+        .btn-member { background-color: #3498db; color: white; }
+        .btn-admin { background-color: #2c3e50; color: white; }
+        .active { opacity: 1; transform: scale(1.05); }
+        .inactive { opacity: 0.6; }
+
+        /* Form Styling */
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        button.submit-btn { width: 100%; padding: 12px; background-color: #27ae60; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 10px; }
+        button.submit-btn:hover { background-color: #219150; }
+
+        /* Tabel Admin */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; color: #333; }
+        .delete-btn { background-color: #e74c3c; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; }
+        
+        /* Utility */
+        .hidden { display: none; }
+        .success-msg { color: green; text-align: center; margin-top: 10px; display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🎮 Absen Grup Game</h2>
+
+    <!-- Pilihan Mode -->
+    <div class="mode-switch">
+        <button class="btn-mode btn-member active" onclick="setMode('member')">Mode Member</button>
+        <button class="btn-mode btn-admin" onclick="setMode('admin')">Mode Admin</button>
+    </div>
+
+    <!-- Tampilan Member: Form Absen -->
+    <div id="memberView">
+        <div class="form-group">
+            <label>Nama Lengkap:</label>
+            <input type="text" id="nama" placeholder="Contoh: Budi Santoso">
+        </div>
+        <div class="form-group">
+            <label>ID Game:</label>
+            <input type="text" id="idGame" placeholder="Contoh: 12345678 (1234)">
+        </div>
+        <div class="form-group">
+            <label>Nickname:</label>
+            <input type="text" id="nickName" placeholder="Contoh: ProPlayer_99">
+        </div>
+        <button class="submit-btn" onclick="kirimAbsen()">Kirim Absen</button>
+        <p class="success-msg" id="msgSuccess">✅ Absen berhasil dikirim!</p>
+    </div>
+
+    <!-- Tampilan Admin: Daftar Absen -->
+    <div id="adminView" class="hidden">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <h3>Daftar Peserta Absen</h3>
+            <button onclick="hapusSemua()" style="background:#e74c3c; color:white; border:none; padding:5px 10px; border-radius:4px; cursor:pointer;">Reset Data</button>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nama</th>
+                    <th>ID Game</th>
+                    <th>Nickname</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody id="tabelAbsen">
+                <!-- Data akan masuk di sini -->
+            </tbody>
+        </table>
+        <p id="emptyMsg" style="text-align:center; color:#888; margin-top:20px;">Belum ada data absen.</p>
+    </div>
+</div>
+
+<script>
+    // Fungsi Ganti Mode
+    function setMode(mode) {
+        const memberView = document.getElementById('memberView');
+        const adminView = document.getElementById('adminView');
+        const btnMember = document.querySelector('.btn-member');
+        const btnAdmin = document.querySelector('.btn-admin');
+
+        if (mode === 'member') {
+            memberView.classList.remove('hidden');
+            adminView.classList.add('hidden');
+            btnMember.classList.add('active');
+            btnMember.classList.remove('inactive');
+            btnAdmin.classList.remove('active');
+            btnAdmin.classList.add('inactive');
+        } else {
+            // Simulasi keamanan sederhana (bisa diganti password jika mau)
+            let pass = prompt("Masukkan Password Admin (ketik: admin123):");
+            if (pass !== "admin123") {
+                alert("Password salah!");
+                return;
+            }
+
+            memberView.classList.add('hidden');
+            adminView.classList.remove('hidden');
+            btnAdmin.classList.add('active');
+            btnAdmin.classList.remove('inactive');
+            btnMember.classList.remove('active');
+            btnMember.classList.add('inactive');
+            
+            loadData(); // Muat data saat masuk mode admin
+        }
+    }
+
+    // Fungsi Kirim Absen (Member)
+    function kirimAbsen() {
+        const nama = document.getElementById('nama').value;
+        const idGame = document.getElementById('idGame').value;
+        const nickName = document.getElementById('nickName').value;
+
+        if (nama === "" || idGame === "" || nickName === "") {
+            alert("Mohon lengkapi semua data!");
+            return;
+        }
+
+        const dataBaru = { nama, idGame, nickName };
+        
+        // Ambil data lama dari LocalStorage
+        let dataAbsen = JSON.parse(localStorage.getItem('absenGame')) || [];
+        dataAbsen.push(dataBaru);
+        
+        // Simpan kembali
+        localStorage.setItem('absenGame', JSON.stringify(dataAbsen));
+
+        // Reset form dan tampilkan pesan sukses
+        document.getElementById('nama').value = "";
+        document.getElementById('idGame').value = "";
+        document.getElementById('nickName').value = "";
+        
+        const msg = document.getElementById('msgSuccess');
+        msg.style.display = 'block';
+        setTimeout(() => { msg.style.display = 'none'; }, 3000);
+    }
+
+    // Fungsi Muat Data (Admin)
+    function loadData() {
+        const tbody = document.getElementById('tabelAbsen');
+        const emptyMsg = document.getElementById('emptyMsg');
+        tbody.innerHTML = ""; // Bersihkan tabel
+
+        let dataAbsen = JSON.parse(localStorage.getItem('absenGame')) || [];
+
+        if (dataAbsen.length === 0) {
+            emptyMsg.style.display = 'block';
+        } else {
+            emptyMsg.style.display = 'none';
+            dataAbsen.forEach((item, index) => {
+                let row = `<tr>
+                    <td>${item.nama}</td>
+                    <td>${item.idGame}</td>
+                    <td>${item.nickName}</td>
+                    <td><button class="delete-btn" onclick="hapusSatu(${index})">Hapus</button></td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+    }
+
+    // Hapus Satu Data
+    function hapusSatu(index) {
+        let dataAbsen = JSON.parse(localStorage.getItem('absenGame')) || [];
+        dataAbsen.splice(index, 1);
+        localStorage.setItem('absenGame', JSON.stringify(dataAbsen));
+        loadData(); // Refresh tabel
+    }
+
+    // Hapus Semua Data
+    function hapusSemua() {
+        if(confirm("Yakin ingin menghapus semua data absen?")) {
+            localStorage.removeItem('absenGame');
+            loadData();
+        }
+    }
+</script>
+
+</body>
+</html>
